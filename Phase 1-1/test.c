@@ -1,4 +1,4 @@
-/*
+/*https://github.com/EricRobertBrewer/SonomaState/blob/master/cs365/pinger.c
 * pinger.c
 * This is a ping imitation program
 * It will send an ICMP ECHO packet to the server of
