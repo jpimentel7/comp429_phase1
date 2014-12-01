@@ -3,12 +3,12 @@
 #include <string.h>
 //used for nanosleep
 #include <time.h>
-//
+//used for threads
 #include <pthread.h>
-
+//
 #include <sys/types.h>
 #include <sys/socket.h>
-
+//
 #include <netinet/ip_icmp.h>
 #include <netinet/in.h>
 #include <netinet/udp.h>
@@ -16,20 +16,16 @@
 
 #define DEST "192.168.1.1"
 #define SRC  "192.168.1.3"
-//input
-char dst_addr[20]= "127.0.0.1";
-char src_addr[20] = "192.168.1.3";
-
-int datasize = 1000;
-int numOfUdpPacket = 2;
-int numOfTailICMP =9;
+//user input
+char *destIP;
 int portNum = 2000;
 char *entropy = "low";
+int datasize = 1000;
+int numOfUdpPacket = 2;
 int ttl = 64;
 int innerPacketLenght = 2;
-//used to keep count of how many packets we get
-int pCount = 0;
-int totalPacket = 2+1+9;
+int numOfTailICMP =9;
+
 //used to store packet send time
 typedef struct{
     double sendTime;
@@ -55,26 +51,33 @@ int main(){
     struct sockaddr_in connection;
     struct iphdr *recIpHeader;
     struct icmphdr *recIcmpHeader;
+    //the amount of packets we have received
+    int pCount = 0;
+    //keeps track of which packets we got
+    int recCounter = 0;
+    //Used to keep count of how many packets we get
+    int totalPacket = numOfUdpPacket+ numOfTailICMP + 1;
+
     //used to store times
     packetTime = malloc(sizeof(Rtt) * (1 + numOfTailICMP));
-    //keeps track of which packets we got 
-    int recCounter = 0;
 
     //starts a thread that send all the packets leaving the main thread free to listen
     if (pthread_create(&sendingThread,NULL,sendPackets,NULL))
     {
         perror("sending thread");
     }
+    
     //used to hold the packet we get back
     buff = malloc(sizeof(struct iphdr) + sizeof(struct icmphdr));
     len =sizeof(connection);
+    Rtt temp;
     //listen for in coming icmp packets
     if ((recSocket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1)
     {
         perror("socket");
     }
     //listen for in coming icmp packets
-    while(1){
+    while(pCount != totalPacket){
         if (recvfrom(recSocket, buff, sizeof(struct iphdr) + sizeof(struct icmphdr),
          0, (struct sockaddr *)&connection, &len) == -1)
         {
@@ -84,6 +87,7 @@ int main(){
             pCount++;
             recIpHeader = (struct iphdr*) buff;
             recIcmpHeader = (struct icmphdr*)(buff + sizeof(struct iphdr));
+            temp.recTime = get_time();
             //printf("The code we got back was :%d and the type was:%d\n",
               //  recIcmpHeader->code,recIcmpHeader->type);
             //checks the code and if its a repley the rtt is outputed 
@@ -94,8 +98,6 @@ int main(){
             recCounter++;
             memset(buff,0,sizeof(buff));
         }
-        if(pCount == totalPacket)
-            break;
     }
 
     //waits for the other thread to finish
@@ -104,6 +106,10 @@ int main(){
     }
 }
 
+/**
+* Opens a raw socket which is used to send udp/icmp packets. Runs on its own thread
+* and is called from the main. Sends all the necessary packets.
+*/
 void *sendPackets(){
     int rawSocket;
     /*
@@ -115,16 +121,15 @@ void *sendPackets(){
     {
         perror("socket");
     }
-    //sends the first icmp
+    //sends the first icmp message
     sendICMP(rawSocket,DEST);
     //socket, how many, size , ttl, dest port, dest, entropy
     sendUdpTrain(rawSocket,numOfUdpPacket,100,55,2989,DEST,"H");
-    //sends n icmp packets every ms m seconds
+    //sends n icmp packets every ms
     int millisec = 100;
     struct timespec req;
     req.tv_sec=0;
     req.tv_nsec=millisec * 1000000L;
-
     int i = 0;
     for(i=0;i<numOfTailICMP;i++){
         sendICMP(rawSocket,DEST);
@@ -134,6 +139,11 @@ void *sendPackets(){
     }
 }
 
+/**
+* Sends a ICMP message to dest using the socket
+* pass to it. Also records the time after sending
+* every packet.
+*/
 void sendICMP(int rawSocket, char *dest){
     struct iphdr* ip;
     struct icmphdr* icmp;
@@ -178,11 +188,12 @@ void sendICMP(int rawSocket, char *dest){
         printf("the sending time is :%f \n",temp.sendTime);
         packetTime[sentCount] = temp;
         sentCount++;
-
     }
-
 }
 // socket, how many,size, entropy,dest
+/**
+* Sends N many udp packets to dest.
+*/
 void sendUdpTrain(int rawSocket,int n,int size,int ttl,int desPort,char* dest,char *entro){
     struct iphdr *ip;
     struct udphdr *udp;
