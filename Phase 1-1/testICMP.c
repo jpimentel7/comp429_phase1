@@ -20,10 +20,19 @@ int main(){
     struct iphdr* ip;
     //icmp header
     struct icmphdr* icmp;
+    struct icmphdr* icmp_reply;
+    //used for the response
+    struct iphdr* resIPH;
+
     //used to store everything
-    char* packet;
+    char *packet;
     //raw socket
     int mainSocket;
+    //reciving socket
+    int recSocket;
+    //used to recived information
+    char *buff;
+    int len;
 
     /*
     short            sin_family;   // e.g. AF_INET, AF_INET6
@@ -87,6 +96,21 @@ int main(){
     sendto(mainSocket, packet, ip->tot_len, 0, (struct sockaddr *)&connection, sizeof(struct sockaddr));
     printf("Sent %d byte packet to %s\n", ip->tot_len, dst_addr);
 
+    //used to hold the packet we get back
+    buff = malloc(sizeof(struct iphdr) + sizeof(struct icmphdr));
+    len = sizeof(connection);
+    if (( recSocket = recvfrom(mainSocket, buff, sizeof(struct iphdr) + sizeof(struct icmphdr), 0, (struct sockaddr *)&connection, &len)) == -1)
+    {
+        perror("recv");
+    }
+    else{
+        resIPH = (struct iphdr*) buff;
+        printf("ID: %d\n", ntohs(resIPH->id));
+        printf("TTL: %d\n", resIPH->ttl);
+        //set the icmp packet
+        icmp_reply = (struct icmphdr*) (buff + sizeof(struct iphdr));
+        printf("Code: %d", icmp_reply->code);
+    }
 }
 
 unsigned short in_cksum(unsigned short *addr, int len)
