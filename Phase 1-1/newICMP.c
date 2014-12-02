@@ -17,37 +17,39 @@
 //104.173.183.166
 #define SRC  "192.168.1.3"
 
-//used to store packet send time
+/*!<  */
 typedef struct{
     double sendTime;
     double recTime;
 } Rtt;
-Rtt *packetTime;
+Rtt *packetTime;/*!< Used to time stamp each packet */
 
 struct args{
-    char *dest;
-    int port;
-    char *entro;
-    int dataSize;
-    int nUdpPackets;
-    int ttl;
-    int packetSpacing;
-    int nTailICMP;
-};
+    char *dest;/*!< 1. The Receiver’s IP Address */
+    int port;/*!< 2. Port Number for UDP */
+    char *entro;/*!< 3. Low or High Entropy (This will be a single character. Either “H” or “L”) */
+    int dataSize;/*!< 4. The Size of the UDP Payload in the UDP Packet Train */
+    int nUdpPackets;/*!< 5. The Number of UDP Packets in the UDP Packet Train */
+    int ttl;/*!< 6. TTL for the UDP Packets */
+    int packetSpacing;/*!< 7. The Inter-Packet Departure Time between Tail ICMP Packets (in milliseconds) */
+    int nTailICMP;/*!< 8. The Number of Tail ICMP Packets  */
+};/*!< Used to pass the arguments to the threads*/
 
-pthread_mutex_t lock;
+pthread_mutex_t lock; /*!< Used to avoid a race condition when accessing packetTime*/
+int sentCount = 0;/*!< used to count the number of items in the packetTime array */
 
-//used to count the number of items in the packetTime array
-int sentCount = 0;
-//fp
 void *sendPackets(void*);
 void *recPackets(void*);
 unsigned short in_cksum(unsigned short * , int);
 double get_time();
 void sendICMP(int socket,struct args*);
-// socket, how many,size,ttl, entropy,dest
 void sendUdpTrain(int socket,struct args*);
-//
+
+/**
+*
+*Creates two threads one to send and one to receive. Then waits for them to finish
+* before freeing up memory.
+*/
 int main(int argc ,char *argv[]){
     pthread_t sendingThread,receivingThread;
     struct args *perms;
@@ -88,6 +90,11 @@ int main(int argc ,char *argv[]){
 
     pthread_mutex_destroy(&lock);
 }
+
+/**
+* A raw socket is opened and receives all the icmp packets. All the repleys are time stamp.
+* After all the packets have been received the RTT is calculated.
+*/
 void *recPackets(void *argu){
     //used to hold the values we received
     struct args *perms = (struct args*)argu;
@@ -220,7 +227,7 @@ void sendICMP(int rawSocket , struct args *perms){
         sentCount++;
     }
 }
-// socket, how many,size, entropy,dest
+
 /**
 * Sends N many udp packets to dest.
 */
