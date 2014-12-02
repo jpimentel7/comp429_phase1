@@ -13,18 +13,9 @@
 #include <netinet/in.h>
 #include <netinet/udp.h>
 #include <netinet/ip.h>
-
-#define DEST "192.168.1.1"
+#include <zlib.h>
+//104.173.183.166
 #define SRC  "192.168.1.3"
-//user input
-char *destIP;
-int portNum = 2000;
-char *entropy = "low";
-int datasize = 1000;
-int numOfUdpPacket = 2;
-int ttl = 64;
-int innerPacketLenght = 2;
-int numOfTailICMP =9;
 
 //used to store packet send time
 typedef struct{
@@ -32,85 +23,127 @@ typedef struct{
     double recTime;
 } Rtt;
 Rtt *packetTime;
+
+struct args{
+    char *dest;
+    int port;
+    char *entro;
+    int dataSize;
+    int nUdpPackets;
+    int ttl;
+    int packetSpacing;
+    int nTailICMP;
+};
+
+pthread_mutex_t lock;
+
 //used to count the number of items in the packetTime array
 int sentCount = 0;
 //fp
-void *sendPackets();
-unsigned short in_cksum(unsigned short *, int);
+void *sendPackets(void*);
+void *recPackets(void*);
+unsigned short in_cksum(unsigned short * , int);
 double get_time();
-void sendICMP(int,char*);
+void sendICMP(int socket,struct args*);
 // socket, how many,size,ttl, entropy,dest
-void sendUdpTrain(int,int,int,int,int,char*,char*);
+void sendUdpTrain(int socket,struct args*);
+//
+int main(int argc ,char *argv[]){
+    pthread_t sendingThread,receivingThread;
+    struct args *perms;
+    if(argc < 9)
+        exit(0);
+    perms = malloc(sizeof(struct args));
+    //1. The Receiver’s IP Address
+    perms->dest = argv[1];
+    //2. Port Number for UDP
+    perms->port = atoi(argv[2]);
+    //3. Low or High Entropy (This will be a single character. Either “H” or “L”)
+    perms->entro = argv[3];
+    //4. The Size of the UDP Payload in the UDP Packet Train
+    perms->dataSize = atoi(argv[4]);
+    //5. The Number of UDP Packets in the UDP Packet Train
+    perms->nUdpPackets = atoi(argv[5]);
+    //6. TTL for the UDP Packets
+    perms->ttl = atoi(argv[6]);
+    //7. The Inter-Packet Departure Time between Tail ICMP Packets (in milliseconds)
+    perms->packetSpacing = atoi(argv[7]);
+    //8. The Number of Tail ICMP Packets
+    perms->nTailICMP = atoi(argv[8]);
 
-int main(){
-    pthread_t sendingThread;
+    //used to store times
+    packetTime = malloc(sizeof(Rtt) * (1 + perms->nTailICMP));
+    //starts a thread that send all the packets leaving the main thread free to listen
+    if (pthread_create(&sendingThread,NULL,sendPackets,(void*)perms))
+        perror("sending thread");
+    //starts a thread that send all the packets leaving the main thread free to listen
+    if (pthread_create(&receivingThread,NULL,recPackets,(void*)perms))
+       perror("sending thread");
+
+    //waits for the other thread to finish
+    if(pthread_join(sendingThread,NULL))
+        perror("joining sending thread");
+    if(pthread_join(receivingThread,NULL))
+        perror("joining receiving thread");
+
+    pthread_mutex_destroy(&lock);
+}
+void *recPackets(void *argu){
     //used to hold the values we received
+    struct args *perms = (struct args*)argu;
     char *buff;
-    int len;
-    int recSocket;
+    int len,recSocket,packetNum;
     struct sockaddr_in connection;
     struct iphdr *recIpHeader;
     struct icmphdr *recIcmpHeader;
-    //the amount of packets we have received
-    int pCount = 0;
+    Rtt temp;
     //keeps track of which packets we got
     int recCounter = 0;
-    //Used to keep count of how many packets we get
-    int totalPacket = numOfUdpPacket+ numOfTailICMP + 1;
-
-    //used to store times
-    packetTime = malloc(sizeof(Rtt) * (1 + numOfTailICMP));
-
-    //starts a thread that send all the packets leaving the main thread free to listen
-    if (pthread_create(&sendingThread,NULL,sendPackets,NULL))
-    {
-        perror("sending thread");
-    }
-    
     //used to hold the packet we get back
     buff = malloc(sizeof(struct iphdr) + sizeof(struct icmphdr));
     len =sizeof(connection);
-    Rtt temp;
     //listen for in coming icmp packets
     if ((recSocket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1)
-    {
         perror("socket");
-    }
     //listen for in coming icmp packets
-    while(pCount != totalPacket){
+    packetNum = perms->nTailICMP + 1;
+    while(recCounter != packetNum){
         if (recvfrom(recSocket, buff, sizeof(struct iphdr) + sizeof(struct icmphdr),
-         0, (struct sockaddr *)&connection, &len) == -1)
-        {
+         0, (struct sockaddr *)&connection, &len) == -1){
             perror("recv");
-        }
-        else{
-            pCount++;
+        } else{
+
             recIpHeader = (struct iphdr*) buff;
             recIcmpHeader = (struct icmphdr*)(buff + sizeof(struct iphdr));
             temp.recTime = get_time();
             //printf("The code we got back was :%d and the type was:%d\n",
               //  recIcmpHeader->code,recIcmpHeader->type);
-            //checks the code and if its a repley the rtt is outputed 
+            //checks the code and if its a repley the rtt is outputed
             if(recIcmpHeader->code == 0){
-                double diff = get_time() - packetTime[recCounter].sendTime;
-                printf("The rtt was:%f \n",diff);
+                pthread_mutex_lock(&lock);
+                packetTime[recCounter].recTime = get_time();
+                pthread_mutex_unlock(&lock);
+                //printf("The rtt was:%f \n",diff);
+                recCounter++;
             }
-            recCounter++;
+            //restarts the buff
             memset(buff,0,sizeof(buff));
         }
     }
-
-    //waits for the other thread to finish
-    if(pthread_join(sendingThread,NULL)){
-        printf("wtf");
+    int i;
+    for(i=0;i<packetNum;i++){
+        double diff = packetTime[i].recTime - packetTime[i].sendTime;
+        printf("%s %f \n",perms->entro,diff);
     }
+
 }
 
 /**
 * Opens a raw socket which is used to send udp/icmp packets. Runs on its own thread
 * and is called from the main. Sends all the necessary packets.
 */
-void *sendPackets(){
+void *sendPackets(void *argu){
+    struct args *perms = (struct args*)argu;
     int rawSocket;
     /*
      On Linux when setting the protocol as IPPROTO_RAW,
@@ -118,24 +151,20 @@ void *sendPackets(){
     its own IP header.
     */
     if ((rawSocket = socket(AF_INET, SOCK_RAW, 255)) == -1)
-    {
         perror("socket");
-    }
     //sends the first icmp message
-    sendICMP(rawSocket,DEST);
-    //socket, how many, size , ttl, dest port, dest, entropy
-    sendUdpTrain(rawSocket,numOfUdpPacket,100,55,2989,DEST,"H");
+    sendICMP(rawSocket,perms);
+    sendUdpTrain(rawSocket,perms);
     //sends n icmp packets every ms
-    int millisec = 100;
+    int millisec = perms->packetSpacing;
     struct timespec req;
     req.tv_sec=0;
     req.tv_nsec=millisec * 1000000L;
     int i = 0;
-    for(i=0;i<numOfTailICMP;i++){
-        sendICMP(rawSocket,DEST);
-        if(nanosleep(&req,(struct timespec*)NULL) == -1){
+    for(i=0;i<perms->nTailICMP;i++){
+        sendICMP(rawSocket,perms);
+        if(nanosleep(&req,(struct timespec*)NULL) == -1)
             perror("nanosleep:");
-        }
     }
 }
 
@@ -144,7 +173,7 @@ void *sendPackets(){
 * pass to it. Also records the time after sending
 * every packet.
 */
-void sendICMP(int rawSocket, char *dest){
+void sendICMP(int rawSocket , struct args *perms){
     struct iphdr* ip;
     struct icmphdr* icmp;
     char *packet;
@@ -162,31 +191,32 @@ void sendICMP(int rawSocket, char *dest){
     ip->tot_len = sizeof(struct iphdr) + sizeof(struct icmphdr);
     ip->id = htons(0);
     ip->frag_off = 0;
-    ip->ttl = ttl;
+    ip->ttl = perms->ttl;
     ip->protocol = IPPROTO_ICMP;
     //returns an internet address
     ip->saddr = inet_addr(SRC);
-    ip->daddr = inet_addr(dest);
-    ip->check = in_cksum((unsigned short *)ip, sizeof(struct iphdr));
+    ip->daddr = inet_addr(perms->dest);
+    ip->check = in_cksum((unsigned short *)ip , sizeof(struct iphdr));
     //Building up the icmp packet
     icmp->type = ICMP_ECHO;
     icmp->code = 0;
     icmp->un.echo.id = random();
     icmp->un.echo.sequence = 0;
-    icmp-> checksum = in_cksum((unsigned short *)icmp, sizeof(struct icmphdr));
+    icmp-> checksum = in_cksum((unsigned short *)icmp , sizeof(struct icmphdr));
     //ipv4
     connection.sin_family = AF_INET;
-    connection.sin_addr.s_addr = inet_addr(dest);
+    connection.sin_addr.s_addr = inet_addr(perms->dest);
     //sending
     if(sendto(rawSocket, packet, ip->tot_len, 0, (struct sockaddr *)&connection, sizeof(connection)) == -1){
         perror("error with sending\n");
-    }
-    else{
+    } else{
         //
         Rtt temp;
         temp.sendTime = get_time();
-        printf("the sending time is :%f \n",temp.sendTime);
+        //printf("the sending time is :%f \n",temp.sendTime);
+        pthread_mutex_lock(&lock);
         packetTime[sentCount] = temp;
+        pthread_mutex_unlock(&lock);
         sentCount++;
     }
 }
@@ -194,47 +224,58 @@ void sendICMP(int rawSocket, char *dest){
 /**
 * Sends N many udp packets to dest.
 */
-void sendUdpTrain(int rawSocket,int n,int size,int ttl,int desPort,char* dest,char *entro){
+void sendUdpTrain(int rawSocket ,struct args *perms){
     struct iphdr *ip;
     struct udphdr *udp;
     char *data;
     char packet[4096];
     memset(packet, 0, 4096);
-
+    int size = perms->dataSize;
     struct sockaddr_in connection;
     //ipv4
     connection.sin_family = AF_INET;
-    connection.sin_port = desPort;
-    connection.sin_addr.s_addr = inet_addr(dest);
+    connection.sin_port = perms->port;
+    connection.sin_addr.s_addr = inet_addr(perms->dest);
     //sets the headers position relative to each other
     ip = (struct iphdr*)packet;
     udp = (struct udphdr*)(packet + sizeof(struct iphdr));
     data = packet + sizeof(struct iphdr) + sizeof(struct udphdr);
     //testing
-    //payload
-    strcpy(data, "look at me");
-    //Buidling ip header
+    if(perms->entro == "H") {
+        FILE *ran;
+        ran = fopen("/dev/urandom", "r");
+        fread(data, 1, size, ran);
+        fclose(ran);
+    } else{
+        char *temp;
+        int len;
+        int i;
+        temp = malloc(sizeof(char) * size);
+        for(i=0;i<size;i++)
+            temp[i]='0';
+        strcpy(data, temp);
+    }
     ip->ihl = 5;
     ip->version = 4;
     ip->tos = 0;
     ip->tot_len = sizeof(struct iphdr) + sizeof(struct udphdr) + strlen(data);
     ip->id = htons(0);
     ip->frag_off = 0;
-    ip->ttl = ttl;
+    ip->ttl = perms->ttl;
     ip->protocol = IPPROTO_UDP;
     //returns an internet address
     ip->saddr = inet_addr(SRC);
-    ip->daddr = inet_addr(dest);
+    ip->daddr = inet_addr(perms->dest);
     ip->check = in_cksum((unsigned short *) ip, sizeof(struct iphdr));
     //Building the upd header
     //web port lol
     udp->source = htons(80);
-    udp->dest = htons(desPort);
-    //the size of a udp header is 8
+    udp->dest = htons(perms->port);
+    //the size of a udp header is 8 + size
     udp->len = htons(8 + strlen(data));
     udp->check = 0;
     int i =0;
-    for(i=0;i<n;i++) {
+    for(i=0;i<perms->nUdpPackets;i++) {
         if (sendto(rawSocket, packet, ip->tot_len, 0, (struct sockaddr *) &connection,
                 sizeof(connection)) == -1) {
             printf("error with sending\n");
