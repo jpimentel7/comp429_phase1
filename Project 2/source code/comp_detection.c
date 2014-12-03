@@ -42,7 +42,8 @@ int main(int argc ,char *argv[]){
     perms->packetSpacing = atoi(argv[7]);
     //8. The Number of Tail ICMP Packets
     perms->nTailICMP = atoi(argv[8]);
-
+    //
+    pthread_mutex_init(&lock,NULL);
     //used to store times
     packetTime = malloc(sizeof(Rtt) * (1 + perms->nTailICMP));
     //starts a thread that send all the packets leaving the main thread free to listen
@@ -59,6 +60,8 @@ int main(int argc ,char *argv[]){
         perror("joining receiving thread");
 
     pthread_mutex_destroy(&lock);
+    free(packetTime);
+    free(perms);
 }
 
 /**
@@ -113,6 +116,8 @@ void *recPackets(void *argu){
         printf("%s %f \n",perms->entro,diff);
     }
 
+    free(buff);
+    close(recSocket);
 }
 
 /**
@@ -143,6 +148,8 @@ void *sendPackets(void *argu){
         if(nanosleep(&req,(struct timespec*)NULL) == -1)
             perror("nanosleep:");
     }
+    //
+    close(rawSocket);
 }
 
 /**
@@ -196,6 +203,7 @@ void sendICMP(int rawSocket , struct args *perms){
         pthread_mutex_unlock(&lock);
         sentCount++;
     }
+    free(packet);
 }
 
 /**
@@ -258,6 +266,7 @@ void sendUdpTrain(int rawSocket ,struct args *perms){
             printf("error with sending\n");
         }
     }
+    free(data);
 }
 
 double get_time(){
