@@ -1,11 +1,14 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
 
 int main(){
-	int temp =0;
-	FILE *ran;
-	ran = fopen("/dev/random","r");
-	fread(&temp,sizeof(temp),1,ran);
-	fclose(ran);
+	char *temp;
+	temp = malloc(sizeof(char) * 1000);
+	int ran;
+	ran = open("/dev/random",O_RDONLY);
+	read(ran,temp,1000);
+	close(ran);
 
-	printf("%d\n",temp );
+	printf("%s\n",temp );
 }

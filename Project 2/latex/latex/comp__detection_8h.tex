@@ -1,0 +1,204 @@
+\section{comp\-\_\-detection.\-h File Reference}
+\label{comp__detection_8h}\index{comp\-\_\-detection.\-h@{comp\-\_\-detection.\-h}}
+
+
+Function prototypes and global variables.  
+
+
+{\ttfamily \#include $<$stdio.\-h$>$}\\*
+{\ttfamily \#include $<$stdlib.\-h$>$}\\*
+{\ttfamily \#include $<$string.\-h$>$}\\*
+{\ttfamily \#include $<$time.\-h$>$}\\*
+{\ttfamily \#include $<$pthread.\-h$>$}\\*
+{\ttfamily \#include $<$sys/types.\-h$>$}\\*
+{\ttfamily \#include $<$sys/socket.\-h$>$}\\*
+{\ttfamily \#include $<$netinet/ip\-\_\-icmp.\-h$>$}\\*
+{\ttfamily \#include $<$netinet/in.\-h$>$}\\*
+{\ttfamily \#include $<$netinet/udp.\-h$>$}\\*
+{\ttfamily \#include $<$netinet/ip.\-h$>$}\\*
+{\ttfamily \#include $<$zlib.\-h$>$}\\*
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct {\bf Rtt}
+\item 
+struct {\bf args}
+\end{DoxyCompactItemize}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define {\bf S\-R\-C}~\char`\"{}192.\-168.\-1.\-3\char`\"{}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void $\ast$ {\bf send\-Packets} (void $\ast$)
+\begin{DoxyCompactList}\small\item\em Sends all the packets. \end{DoxyCompactList}\item 
+void $\ast$ {\bf rec\-Packets} (void $\ast$)
+\begin{DoxyCompactList}\small\item\em Receives icmp messages. \end{DoxyCompactList}\item 
+unsigned short {\bf in\-\_\-cksum} (unsigned short $\ast$, int)
+\begin{DoxyCompactList}\small\item\em I\-P checksum. \end{DoxyCompactList}\item 
+double {\bf get\-\_\-time} ()
+\begin{DoxyCompactList}\small\item\em Returns the current time as a double. \end{DoxyCompactList}\item 
+void {\bf send\-I\-C\-M\-P} (int socket, struct {\bf args} $\ast$)
+\begin{DoxyCompactList}\small\item\em Sends a icmp message. \end{DoxyCompactList}\item 
+void {\bf send\-Udp\-Train} (int socket, struct {\bf args} $\ast$)
+\begin{DoxyCompactList}\small\item\em Sends a train of udp packets. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+{\bf Rtt} $\ast$ {\bf packet\-Time}
+\item 
+pthread\-\_\-mutex\-\_\-t {\bf lock}
+\item 
+int {\bf sent\-Count} = 0
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Function prototypes and global variables. \begin{DoxyAuthor}{Author}
+Javier Pimentel 
+\end{DoxyAuthor}
+
+
+\subsection{Macro Definition Documentation}
+\index{comp\-\_\-detection.\-h@{comp\-\_\-detection.\-h}!S\-R\-C@{S\-R\-C}}
+\index{S\-R\-C@{S\-R\-C}!comp_detection.h@{comp\-\_\-detection.\-h}}
+\subsubsection[{S\-R\-C}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\-R\-C~\char`\"{}192.\-168.\-1.\-3\char`\"{}}\label{comp__detection_8h_a4f7461a96f9dbfc004a8d326e321c33d}
+Hold the host machines I\-P. 
+
+\subsection{Function Documentation}
+\index{comp\-\_\-detection.\-h@{comp\-\_\-detection.\-h}!get\-\_\-time@{get\-\_\-time}}
+\index{get\-\_\-time@{get\-\_\-time}!comp_detection.h@{comp\-\_\-detection.\-h}}
+\subsubsection[{get\-\_\-time}]{\setlength{\rightskip}{0pt plus 5cm}double get\-\_\-time (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8h_af7ab092ab10d65db3b9051a12420fa52}
+
+
+Returns the current time as a double. 
+
+\begin{DoxyReturn}{Returns}
+Current time as a double 
+\end{DoxyReturn}
+\index{comp\-\_\-detection.\-h@{comp\-\_\-detection.\-h}!in\-\_\-cksum@{in\-\_\-cksum}}
+\index{in\-\_\-cksum@{in\-\_\-cksum}!comp_detection.h@{comp\-\_\-detection.\-h}}
+\subsubsection[{in\-\_\-cksum}]{\setlength{\rightskip}{0pt plus 5cm}unsigned short in\-\_\-cksum (
+\begin{DoxyParamCaption}
+\item[{unsigned short $\ast$}]{, }
+\item[{int}]{}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8h_a76d69d5dada166ee366115852b5a9fdf}
+
+
+I\-P checksum. 
+
+\begin{DoxyReturn}{Returns}
+I\-P checksum as a unsigned short. 
+\end{DoxyReturn}
+\index{comp\-\_\-detection.\-h@{comp\-\_\-detection.\-h}!rec\-Packets@{rec\-Packets}}
+\index{rec\-Packets@{rec\-Packets}!comp_detection.h@{comp\-\_\-detection.\-h}}
+\subsubsection[{rec\-Packets}]{\setlength{\rightskip}{0pt plus 5cm}void$\ast$ rec\-Packets (
+\begin{DoxyParamCaption}
+\item[{void $\ast$}]{argu}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8h_a2dc5f7a975846aef53d97195cc48880a}
+
+
+Receives icmp messages. 
+
+Called by main to receive icmp messages. Runs on its own thread. After all the messages are receives the R\-T\-T is calculated.
+
+
+\begin{DoxyParams}{Parameters}
+{\em void$\ast$} & Holds all the command line arguments. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void
+\end{DoxyReturn}
+A raw socket is opened and receives all the icmp packets. All the repleys are time stamp. After all the packets have been received the R\-T\-T is calculated. \index{comp\-\_\-detection.\-h@{comp\-\_\-detection.\-h}!send\-I\-C\-M\-P@{send\-I\-C\-M\-P}}
+\index{send\-I\-C\-M\-P@{send\-I\-C\-M\-P}!comp_detection.h@{comp\-\_\-detection.\-h}}
+\subsubsection[{send\-I\-C\-M\-P}]{\setlength{\rightskip}{0pt plus 5cm}void send\-I\-C\-M\-P (
+\begin{DoxyParamCaption}
+\item[{int}]{raw\-Socket, }
+\item[{struct {\bf args} $\ast$}]{perms}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8h_aa2f808d7cdef7f8dd40d4d51cfcf897f}
+
+
+Sends a icmp message. 
+
+Builds the ip and icmp header. Send the message to the detection specified in the command line argument. Called by \doxyref{send\-Packets()}{p.}{comp__detection_8c_aa2a97799b4079ea12921cac182220a82}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em socket} & Raw Socket \\
+\hline
+{\em args$\ast$} & Contains the command line arguments. \\
+\hline
+\end{DoxyParams}
+\begin{DoxySeeAlso}{See Also}
+\doxyref{send\-Packets()}{p.}{comp__detection_8c_aa2a97799b4079ea12921cac182220a82}
+\end{DoxySeeAlso}
+Sends a I\-C\-M\-P message to dest using the socket pass to it. Also records the time after sending every packet. \index{comp\-\_\-detection.\-h@{comp\-\_\-detection.\-h}!send\-Packets@{send\-Packets}}
+\index{send\-Packets@{send\-Packets}!comp_detection.h@{comp\-\_\-detection.\-h}}
+\subsubsection[{send\-Packets}]{\setlength{\rightskip}{0pt plus 5cm}void$\ast$ send\-Packets (
+\begin{DoxyParamCaption}
+\item[{void $\ast$}]{argu}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8h_a2082fbdc877eae2879e5c178fc516d2a}
+
+
+Sends all the packets. 
+
+Called by main to send icmp and upd packets. Opens a raw socket to be able to send the packets. Sleeps in between sending the tail icmp packets.
+
+\begin{DoxySeeAlso}{See Also}
+\doxyref{send\-I\-C\-M\-P()}{p.}{comp__detection_8c_a9e16d164611516d3662bfdc5a848fced} 
+
+\doxyref{send\-Udp\-Train()}{p.}{comp__detection_8c_ab61b70a2208a3cf7586b9608ddfc0a97} 
+\end{DoxySeeAlso}
+
+\begin{DoxyParams}{Parameters}
+{\em void$\ast$} & command line arguments \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void
+\end{DoxyReturn}
+Opens a raw socket which is used to send udp/icmp packets. Runs on its own thread and is called from the main. Sends all the necessary packets. \index{comp\-\_\-detection.\-h@{comp\-\_\-detection.\-h}!send\-Udp\-Train@{send\-Udp\-Train}}
+\index{send\-Udp\-Train@{send\-Udp\-Train}!comp_detection.h@{comp\-\_\-detection.\-h}}
+\subsubsection[{send\-Udp\-Train}]{\setlength{\rightskip}{0pt plus 5cm}void send\-Udp\-Train (
+\begin{DoxyParamCaption}
+\item[{int}]{raw\-Socket, }
+\item[{struct {\bf args} $\ast$}]{perms}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8h_a65f7f41149f09849f143bff5658a0dbc}
+
+
+Sends a train of udp packets. 
+
+Uses the command line arguments to build the ip and udp header. If the arguments contain H it reads from /dev/urand and sets it as the payload. If L is contained it sends zeros as the payload.
+
+
+\begin{DoxyParams}{Parameters}
+{\em socket} & Raw socket used to send the packets. \\
+\hline
+{\em args$\ast$} & Command line arguments\\
+\hline
+\end{DoxyParams}
+Sends N many udp packets to dest. 
+
+\subsection{Variable Documentation}
+\index{comp\-\_\-detection.\-h@{comp\-\_\-detection.\-h}!lock@{lock}}
+\index{lock@{lock}!comp_detection.h@{comp\-\_\-detection.\-h}}
+\subsubsection[{lock}]{\setlength{\rightskip}{0pt plus 5cm}pthread\-\_\-mutex\-\_\-t lock}\label{comp__detection_8h_a0abaf4b5d42c4e5d19190035fade3599}
+Lock for packet\-Time. Used to avoid a race condition when accessing packet\-Time as it is used by the sending and receiving thread. \index{comp\-\_\-detection.\-h@{comp\-\_\-detection.\-h}!packet\-Time@{packet\-Time}}
+\index{packet\-Time@{packet\-Time}!comp_detection.h@{comp\-\_\-detection.\-h}}
+\subsubsection[{packet\-Time}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Rtt}$\ast$ packet\-Time}\label{comp__detection_8h_af1f587b30d8040fc0aa769451d31a390}
+Array of type \doxyref{Rtt}{p.}{struct_rtt}. Used by the sending and receiving thread to timestamp. \index{comp\-\_\-detection.\-h@{comp\-\_\-detection.\-h}!sent\-Count@{sent\-Count}}
+\index{sent\-Count@{sent\-Count}!comp_detection.h@{comp\-\_\-detection.\-h}}
+\subsubsection[{sent\-Count}]{\setlength{\rightskip}{0pt plus 5cm}int sent\-Count = 0}\label{comp__detection_8h_a131185387a3d52f0b67a0d11f5f14e99}
+Used to count the number of items in the packet\-Time array. Used by \doxyref{send\-I\-C\-M\-P()}{p.}{comp__detection_8h_aa2f808d7cdef7f8dd40d4d51cfcf897f} to keep track of the number of packets sent. 

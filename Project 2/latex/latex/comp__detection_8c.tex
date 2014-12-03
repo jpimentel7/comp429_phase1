@@ -1,0 +1,124 @@
+\section{comp\-\_\-detection.\-c File Reference}
+\label{comp__detection_8c}\index{comp\-\_\-detection.\-c@{comp\-\_\-detection.\-c}}
+
+
+Sends icmp/udp packets to a I\-P address.  
+
+
+{\ttfamily \#include \char`\"{}comp\-\_\-detection.\-h\char`\"{}}\\*
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int {\bf main} (int argc, char $\ast$argv[$\,$])
+\begin{DoxyCompactList}\small\item\em Calls the threads that send the packets. \end{DoxyCompactList}\item 
+void $\ast$ {\bf rec\-Packets} (void $\ast$argu)
+\begin{DoxyCompactList}\small\item\em Receives icmp messages. \end{DoxyCompactList}\item 
+void $\ast$ {\bf send\-Packets} (void $\ast$argu)
+\begin{DoxyCompactList}\small\item\em Sends all the packets. \end{DoxyCompactList}\item 
+void {\bf send\-I\-C\-M\-P} (int raw\-Socket, struct {\bf args} $\ast$perms)
+\begin{DoxyCompactList}\small\item\em Sends a icmp message. \end{DoxyCompactList}\item 
+void {\bf send\-Udp\-Train} (int raw\-Socket, struct {\bf args} $\ast$perms)
+\begin{DoxyCompactList}\small\item\em Sends a train of udp packets. \end{DoxyCompactList}\item 
+double {\bf get\-\_\-time} ()
+\begin{DoxyCompactList}\small\item\em Returns the current time as a double. \end{DoxyCompactList}\item 
+unsigned short {\bf in\-\_\-cksum} (unsigned short $\ast$addr, int len)
+\begin{DoxyCompactList}\small\item\em I\-P checksum. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Sends icmp/udp packets to a I\-P address. Sends an initial icmp message followed by a steam of upd packet. Then a train of icmp messages. When the messages return the R\-T\-T is calculated. Both the sending and receiving are done on different threads.
+
+\begin{DoxyAuthor}{Author}
+Javier Pimentel 
+\end{DoxyAuthor}
+
+
+\subsection{Function Documentation}
+\index{comp\-\_\-detection.\-c@{comp\-\_\-detection.\-c}!get\-\_\-time@{get\-\_\-time}}
+\index{get\-\_\-time@{get\-\_\-time}!comp_detection.c@{comp\-\_\-detection.\-c}}
+\subsubsection[{get\-\_\-time}]{\setlength{\rightskip}{0pt plus 5cm}double get\-\_\-time (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8c_af7ab092ab10d65db3b9051a12420fa52}
+
+
+Returns the current time as a double. 
+
+\begin{DoxyReturn}{Returns}
+Current time as a double 
+\end{DoxyReturn}
+\index{comp\-\_\-detection.\-c@{comp\-\_\-detection.\-c}!in\-\_\-cksum@{in\-\_\-cksum}}
+\index{in\-\_\-cksum@{in\-\_\-cksum}!comp_detection.c@{comp\-\_\-detection.\-c}}
+\subsubsection[{in\-\_\-cksum}]{\setlength{\rightskip}{0pt plus 5cm}unsigned short in\-\_\-cksum (
+\begin{DoxyParamCaption}
+\item[{unsigned short $\ast$}]{, }
+\item[{int}]{}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8c_a5e4cd95c89adfdd7e4bdad48b0b7aa9f}
+
+
+I\-P checksum. 
+
+\begin{DoxyReturn}{Returns}
+I\-P checksum as a unsigned short. 
+\end{DoxyReturn}
+\index{comp\-\_\-detection.\-c@{comp\-\_\-detection.\-c}!main@{main}}
+\index{main@{main}!comp_detection.c@{comp\-\_\-detection.\-c}}
+\subsubsection[{main}]{\setlength{\rightskip}{0pt plus 5cm}int main (
+\begin{DoxyParamCaption}
+\item[{int}]{argc, }
+\item[{char $\ast$}]{argv[$\,$]}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8c_a0ddf1224851353fc92bfbff6f499fa97}
+
+
+Calls the threads that send the packets. 
+
+Creates two threads one to send and one to receive. Also checks to the number of comman line arguments. If there is less then 8 the program will give a warning then exit. After spawning the threads it waits for them to finish before exiting. before freeing up memory. \index{comp\-\_\-detection.\-c@{comp\-\_\-detection.\-c}!rec\-Packets@{rec\-Packets}}
+\index{rec\-Packets@{rec\-Packets}!comp_detection.c@{comp\-\_\-detection.\-c}}
+\subsubsection[{rec\-Packets}]{\setlength{\rightskip}{0pt plus 5cm}void$\ast$ rec\-Packets (
+\begin{DoxyParamCaption}
+\item[{void $\ast$}]{argu}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8c_a53d70ed0bee2e3ad8e9ca4d36e5fb965}
+
+
+Receives icmp messages. 
+
+A raw socket is opened and receives all the icmp packets. All the repleys are time stamp. After all the packets have been received the R\-T\-T is calculated. \index{comp\-\_\-detection.\-c@{comp\-\_\-detection.\-c}!send\-I\-C\-M\-P@{send\-I\-C\-M\-P}}
+\index{send\-I\-C\-M\-P@{send\-I\-C\-M\-P}!comp_detection.c@{comp\-\_\-detection.\-c}}
+\subsubsection[{send\-I\-C\-M\-P}]{\setlength{\rightskip}{0pt plus 5cm}void send\-I\-C\-M\-P (
+\begin{DoxyParamCaption}
+\item[{int}]{raw\-Socket, }
+\item[{struct {\bf args} $\ast$}]{perms}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8c_a9e16d164611516d3662bfdc5a848fced}
+
+
+Sends a icmp message. 
+
+Sends a I\-C\-M\-P message to dest using the socket pass to it. Also records the time after sending every packet. \index{comp\-\_\-detection.\-c@{comp\-\_\-detection.\-c}!send\-Packets@{send\-Packets}}
+\index{send\-Packets@{send\-Packets}!comp_detection.c@{comp\-\_\-detection.\-c}}
+\subsubsection[{send\-Packets}]{\setlength{\rightskip}{0pt plus 5cm}void$\ast$ send\-Packets (
+\begin{DoxyParamCaption}
+\item[{void $\ast$}]{argu}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8c_aa2a97799b4079ea12921cac182220a82}
+
+
+Sends all the packets. 
+
+Opens a raw socket which is used to send udp/icmp packets. Runs on its own thread and is called from the main. Sends all the necessary packets. \index{comp\-\_\-detection.\-c@{comp\-\_\-detection.\-c}!send\-Udp\-Train@{send\-Udp\-Train}}
+\index{send\-Udp\-Train@{send\-Udp\-Train}!comp_detection.c@{comp\-\_\-detection.\-c}}
+\subsubsection[{send\-Udp\-Train}]{\setlength{\rightskip}{0pt plus 5cm}void send\-Udp\-Train (
+\begin{DoxyParamCaption}
+\item[{int}]{raw\-Socket, }
+\item[{struct {\bf args} $\ast$}]{perms}
+\end{DoxyParamCaption}
+)}\label{comp__detection_8c_ab61b70a2208a3cf7586b9608ddfc0a97}
+
+
+Sends a train of udp packets. 
+
+Sends N many udp packets to dest. 
